@@ -1,3 +1,5 @@
+@Library('library_name')_
+
 properties([
   buildDiscarder(logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '', daysToKeepStr: '', numToKeepStr: '10')),
   pipelineTriggers([
@@ -28,18 +30,20 @@ def devConfig = [
   "key":"value",
 ]
 
+def ecrUri = ""
+def repositoryName = ""
 
 nodePod(name:"buildImage",type:"builder"){
   try {
     stage('Checkout Repo') {
-      checkoutRepo(projectName,params.TAG)
+      checkoutRepo(repositoryName,params.TAG)
     }
     stage('Build image') {
       withAWS(credentials:'credential_name', region:'region_name') {
         container('builder') {
           tagVersion = versioning(false)
           def version = tagVersion.version
-          imageTag = "${ecrUri}/${projectName}:${version}-${BUILD_NUMBER}"
+          imageTag = "${ecrUri}/${repositoryName}:${version}-${BUILD_NUMBER}"
           switch(params.targetRealm) {
           case "dev":
             devConfig.each{ k, v -> env."${k}"="${v}" }
@@ -55,7 +59,7 @@ nodePod(name:"buildImage",type:"builder"){
             export BUILD_DATE=\$(date -u -Iseconds)
             \$(aws ecr get-login --no-include-email)
             make build
-            docker tag ${projectName}:${version} ${imageTag}
+            docker tag ${repositoryName}:${version} ${imageTag}
             docker push ${imageTag}
           """
         }
