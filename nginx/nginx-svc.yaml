@@ -8,7 +8,7 @@ spec:
   ports:
   - port: 80
     name: web
-  - targetPort: web
+    targetPort: web
   clusterIP: None
   selector:
     app: nginx
